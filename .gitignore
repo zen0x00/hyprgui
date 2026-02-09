@@ -1,0 +1,45 @@
+# ========================
+# Rust / Cargo
+# ========================
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# ========================
+# OS / Editor junk
+# ========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# ========================
+# Build / runtime artifacts
+# ========================
+*.log
+
+# ========================
+# GTK / libadwaita runtime cache
+# ========================
+*.gresource
+*.ui
+
+# ========================
+# Local assets (optional)
+# ========================
+# Uncomment if you generate these at runtime
+# /assets/generated/
+
+# ========================
+# Environment / secrets
+# ========================
+.env
+.env.*
+
+# ========================
+# Misc
+# ========================
+.cache/
