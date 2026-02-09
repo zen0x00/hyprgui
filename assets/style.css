@@ -1,13 +1,23 @@
 .sidebar {
-  background-color: shade(@window_bg_color, 0.95);
-  border-right: 1px solid alpha(@window_fg_color, 0.1);
+  background-color: @sidebar_bg_color;
 }
 
-.sidebar .heading {
-  font-weight: bold;
-  opacity: 0.8;
+.sidebar-list {
+  padding-bottom: 12px;
 }
 
 .content {
   background-color: @view_bg_color;
+}
+
+.top-bar {
+  background-color: @headerbar_bg_color;
+  border-bottom: 1px solid @borders;
+}
+
+.app-title {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  opacity: 1;
 }

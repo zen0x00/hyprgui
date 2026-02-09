@@ -1,10 +1,37 @@
 use gtk4::GestureClick;
 use gtk4::prelude::*;
-use gtk4::{Box, Orientation, Label, ListBox, ListBoxRow, Align};
+use gtk4::{Box, Orientation, Label, ListBox, ListBoxRow, ScrolledWindow, Align};
 
-pub fn build() -> ListBox {
+
+pub struct Sidebar {
+    pub root: Box,
+    pub list: ListBox,
+}
+
+pub fn build() -> Sidebar {
+    let root = Box::new(Orientation::Vertical, 0);
+    root.add_css_class("sidebar");
+    root.set_size_request(240, -1);
+
+    // ---- List ----
+    let list = build_list();
+
+    let scroller = ScrolledWindow::new();
+    scroller.set_vexpand(true);
+    scroller.set_policy(
+        gtk4::PolicyType::Never,
+        gtk4::PolicyType::Automatic,
+    );
+    scroller.set_child(Some(&list));
+
+    root.append(&scroller);
+
+    Sidebar { root, list }
+}
+
+fn build_list() -> ListBox {
     let list = ListBox::new();
-    list.add_css_class("sidebar");
+    list.add_css_class("sidebar-list");
     list.set_selection_mode(gtk4::SelectionMode::Single);
 
     // -------- Hyprland section --------
@@ -71,7 +98,7 @@ fn section_header(
 
     let label = Label::new(Some(title));
     label.set_xalign(0.0);
-    label.set_margin_top(12);
+    label.set_margin_top(16);
     label.set_margin_bottom(6);
     label.set_margin_start(12);
     label.set_margin_end(12);
