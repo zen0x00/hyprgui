@@ -1,0 +1,8 @@
+.sidebar {
+  background-color: shade(@window_bg_color, 0.95);
+  border-right: 1px solid alpha(@window_fg_color, 0.1);
+}
+
+.content {
+  background-color: @view_bg_color;
+}
