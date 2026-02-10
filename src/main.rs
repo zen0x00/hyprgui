@@ -4,11 +4,11 @@ use adw::Application;
 mod app;
 mod window;
 mod ui;
+mod state;
+mod backend;
 
 fn main() {
-    let app = Application::builder()
-        .application_id("hyprgui")
-        .build();
+    let app = Application::builder().application_id("hyprgui").build();
 
     app.connect_activate(|app| {
         app::build(app);

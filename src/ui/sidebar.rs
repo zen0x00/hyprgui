@@ -1,7 +1,6 @@
 use gtk4::GestureClick;
 use gtk4::prelude::*;
-use gtk4::{Box, Orientation, Label, ListBox, ListBoxRow, ScrolledWindow, Align};
-
+use gtk4::{ Box, Orientation, Label, ListBox, ListBoxRow, ScrolledWindow, Align };
 
 pub struct Sidebar {
     pub root: Box,
@@ -18,10 +17,7 @@ pub fn build() -> Sidebar {
 
     let scroller = ScrolledWindow::new();
     scroller.set_vexpand(true);
-    scroller.set_policy(
-        gtk4::PolicyType::Never,
-        gtk4::PolicyType::Automatic,
-    );
+    scroller.set_policy(gtk4::PolicyType::Never, gtk4::PolicyType::Automatic);
     scroller.set_child(Some(&list));
 
     root.append(&scroller);
@@ -59,39 +55,10 @@ fn build_list() -> ListBox {
 }
 
 fn hyprland_children() -> Vec<ListBoxRow> {
-    vec![
-        child_row("General", "general"),
-        child_row("Decoration", "decoration"),
-        child_row("Animations", "animations"),
-        child_row("Input", "input"),
-        child_row("Gestures", "gestures"),
-        child_row("Group", "group"),
-        child_row("Groupbar", "groupbar"),
-        child_row("Misc", "misc"),
-        child_row("Binds", "binds"),
-        child_row("XWayland", "xwayland"),
-        child_row("OpenGL", "opengl"),
-        child_row("Render", "render"),
-        child_row("Cursor", "cursor"),
-        child_row("Ecosystem", "ecosystem"),
-        child_row("Quirks", "quirks"),
-    ]
+    vec![child_row("General", "general")]
 }
 
-fn hyprlock_children() -> Vec<ListBoxRow> {
-    vec![
-        child_row("General", "general"),
-        child_row("Appearance", "appearance"),
-        child_row("Background", "background"),
-        child_row("Grub", "grub"),
-        child_row("Misc", "misc"),
-    ]
-}
-
-fn section_header(
-    title: &str,
-    on_click: impl Fn() + 'static,
-) -> ListBoxRow {
+fn section_header(title: &str, on_click: impl Fn() + 'static) -> ListBoxRow {
     let row = ListBoxRow::new();
     row.set_selectable(false);
     row.set_activatable(false);
@@ -154,4 +121,3 @@ fn collapse_all(list: &ListBox) {
         }
     }
 }
-

@@ -10,6 +10,11 @@
   background-color: @view_bg_color;
 }
 
+.footer-bar {
+    border-top: 1px solid @borders;
+    background-color: @window_bg_color;
+}
+
 .top-bar {
   background-color: @headerbar_bg_color;
   border-bottom: 1px solid @borders;
