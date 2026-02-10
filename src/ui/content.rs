@@ -35,22 +35,22 @@ pub fn general_page(state: Rc<RefCell<GeneralState>>) -> (PreferencesPage, Rc<dy
     group.set_title("General Settings");
 
     let adjustment = Adjustment::new(1.0, 0.0, 10.0, 1.0, 1.0, 0.0);
-    let spin = SpinButton::new(Some(&adjustment), 1.0, 0);
-    spin.set_numeric(true);
+    let border_spin = SpinButton::new(Some(&adjustment), 1.0, 0);
+    border_spin.set_numeric(true);
 
     // init from state
-    spin.set_value(state.borrow().border_size as f64);
+    border_spin.set_value(state.borrow().border_size as f64);
 
     // write back to state
     let state_clone = state.clone();
-    spin.connect_value_changed(move |s| {
+    border_spin.connect_value_changed(move |s| {
         state_clone.borrow_mut().border_size = s.value() as i32;
     });
 
     let row = ActionRow::new();
     row.set_title("Border Size");
     row.set_subtitle("Size of the border around windows");
-    row.add_suffix(&spin);
+    row.add_suffix(&border_spin);
     row.set_activatable(false);
 
     group.add(&row);
@@ -102,8 +102,7 @@ pub fn general_page(state: Rc<RefCell<GeneralState>>) -> (PreferencesPage, Rc<dy
 
     // ✅ reset closure lives where `spin` lives
     let reset_ui: Rc<dyn Fn()> = {
-        let border_spin = SpinButton::new(Some(&adjustment), 1.0, 0);
-        border_spin.set_numeric(true);
+        let border_spin = border_spin.clone();
         let gaps_in_spin = gaps_in_spin.clone();
         let gaps_out_spin = gaps_out_spin.clone();
 
