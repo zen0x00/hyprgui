@@ -1,5 +1,5 @@
 use adw::prelude::*;
-use adw::{ PreferencesPage, PreferencesGroup, ActionRow };
+use adw::{ ActionRow, PreferencesGroup, PreferencesPage };
 use gtk4::{ Adjustment, SpinButton, Stack };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -13,16 +13,15 @@ pub struct Content {
 
 pub fn build(state: Rc<RefCell<GeneralState>>) -> Content {
     let stack = Stack::new();
-
-    let (general_page, refresh_general_ui) = general_page(state.clone());
-    stack.add_named(&general_page, Some("general"));
-
     stack.set_hexpand(true);
     stack.set_vexpand(true);
 
+    let (general_page, refresh_general) = general_page(state);
+    stack.add_named(&general_page, Some("general"));
+
     Content {
         stack,
-        refresh_ui: refresh_general_ui,
+        refresh_ui: refresh_general,
     }
 }
 
@@ -33,86 +32,102 @@ fn general_page(state: Rc<RefCell<GeneralState>>) -> (PreferencesPage, Rc<dyn Fn
     let group = PreferencesGroup::new();
     group.set_title("General Settings");
 
-    /* ───────── Border Size ───────── */
+    let mut refreshers: Vec<Rc<dyn Fn()>> = Vec::new();
 
-    let border_adj = Adjustment::new(1.0, 0.0, 50.0, 1.0, 1.0, 0.0);
-    let border_spin = SpinButton::new(Some(&border_adj), 1.0, 0);
-    border_spin.set_numeric(true);
-    border_spin.set_value(state.borrow().border_size as f64);
+    add_spin(
+        &group,
+        "Border Size",
+        "Size of the border around windows",
+        0,
+        10,
+        state.clone(),
+        |s| s.border_size,
+        |s, v| {
+            s.border_size = v;
+        },
+        &mut refreshers
+    );
 
-    {
-        let state = state.clone();
-        border_spin.connect_value_changed(move |s| {
-            state.borrow_mut().border_size = s.value() as i32;
-        });
-    }
+    add_spin(
+        &group,
+        "Gaps In",
+        "Gaps between windows",
+        0,
+        50,
+        state.clone(),
+        |s| s.gaps_in,
+        |s, v| {
+            s.gaps_in = v;
+        },
+        &mut refreshers
+    );
 
-    let border_row = ActionRow::new();
-    border_row.set_title("Border Size");
-    border_row.set_subtitle("Size of the border around windows");
-    border_row.add_suffix(&border_spin);
-    border_row.set_activatable(false);
-    group.add(&border_row);
-
-    /* ───────── Gaps In ───────── */
-
-    let gaps_in_adj = Adjustment::new(5.0, 0.0, 100.0, 1.0, 1.0, 0.0);
-    let gaps_in_spin = SpinButton::new(Some(&gaps_in_adj), 1.0, 0);
-    gaps_in_spin.set_numeric(true);
-    gaps_in_spin.set_value(state.borrow().gaps_in as f64);
-
-    {
-        let state = state.clone();
-        gaps_in_spin.connect_value_changed(move |s| {
-            state.borrow_mut().gaps_in = s.value() as i32;
-        });
-    }
-
-    let gaps_in_row = ActionRow::new();
-    gaps_in_row.set_title("Gaps In");
-    gaps_in_row.set_subtitle("Gaps between windows");
-    gaps_in_row.add_suffix(&gaps_in_spin);
-    gaps_in_row.set_activatable(false);
-    group.add(&gaps_in_row);
-
-    /* ───────── Gaps Out ───────── */
-
-    let gaps_out_adj = Adjustment::new(20.0, 0.0, 100.0, 1.0, 1.0, 0.0);
-    let gaps_out_spin = SpinButton::new(Some(&gaps_out_adj), 1.0, 0);
-    gaps_out_spin.set_numeric(true);
-    gaps_out_spin.set_value(state.borrow().gaps_out as f64);
-
-    {
-        let state = state.clone();
-        gaps_out_spin.connect_value_changed(move |s| {
-            state.borrow_mut().gaps_out = s.value() as i32;
-        });
-    }
-
-    let gaps_out_row = ActionRow::new();
-    gaps_out_row.set_title("Gaps Out");
-    gaps_out_row.set_subtitle("Gaps between windows and screen edges");
-    gaps_out_row.add_suffix(&gaps_out_spin);
-    gaps_out_row.set_activatable(false);
-    group.add(&gaps_out_row);
+    add_spin(
+        &group,
+        "Gaps Out",
+        "Gaps between windows and edges",
+        0,
+        50,
+        state.clone(),
+        |s| s.gaps_out,
+        |s, v| {
+            s.gaps_out = v;
+        },
+        &mut refreshers
+    );
 
     page.add(&group);
 
-    /* ───────── Refresh UI from STATE ───────── */
+    let refresh_all = Rc::new(move || {
+        for r in &refreshers {
+            r();
+        }
+    });
 
-    let refresh_ui = {
+    (page, refresh_all)
+}
+
+fn add_spin(
+    group: &PreferencesGroup,
+    title: &str,
+    subtitle: &str,
+    min: i32,
+    max: i32,
+    state: Rc<RefCell<GeneralState>>,
+    getter: fn(&GeneralState) -> i32,
+    setter: fn(&mut GeneralState, i32),
+    refreshers: &mut Vec<Rc<dyn Fn()>>
+) {
+    let adjustment = Adjustment::new(
+        getter(&state.borrow()) as f64,
+        min as f64,
+        max as f64,
+        1.0,
+        1.0,
+        0.0
+    );
+
+    let spin = SpinButton::new(Some(&adjustment), 1.0, 0);
+
+    let row = ActionRow::new();
+    row.set_title(title);
+    row.set_subtitle(subtitle);
+    row.add_suffix(&spin);
+    row.set_activatable(false);
+
+    let state_clone = state.clone();
+    spin.connect_value_changed(move |s: &SpinButton| {
+        setter(&mut state_clone.borrow_mut(), s.value() as i32);
+    });
+
+    let refresh = {
+        let spin = spin.clone();
         let state = state.clone();
-        let border_spin = border_spin.clone();
-        let gaps_in_spin = gaps_in_spin.clone();
-        let gaps_out_spin = gaps_out_spin.clone();
-
         Rc::new(move || {
-            let s = state.borrow();
-            border_spin.set_value(s.border_size as f64);
-            gaps_in_spin.set_value(s.gaps_in as f64);
-            gaps_out_spin.set_value(s.gaps_out as f64);
+            spin.set_value(getter(&state.borrow()) as f64);
         })
     };
 
-    (page, refresh_ui)
+    refreshers.push(refresh);
+    group.add(&row);
 }

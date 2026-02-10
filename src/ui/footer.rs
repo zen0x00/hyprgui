@@ -1,11 +1,11 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use gtk4::prelude::*;
 use gtk4::{ Box, Orientation, Button, MessageDialog, ButtonsType, ResponseType };
 
-use crate::state::GeneralState;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::backend::hyprland;
+use crate::state::GeneralState;
 
 pub fn build(
     parent: gtk4::Window,
@@ -26,7 +26,7 @@ pub fn build(
     reset_btn.add_css_class("destructive-action");
     apply_btn.add_css_class("suggested-action");
 
-    // ---- RESET ----
+    // ---- Reset ----
     {
         let parent = parent.clone();
         let state = state.clone();
@@ -47,8 +47,8 @@ pub fn build(
             let state = state.clone();
             let refresh_ui = refresh_ui.clone();
 
-            dialog.connect_response(move |d, resp| {
-                if resp == ResponseType::Accept {
+            dialog.connect_response(move |d, r| {
+                if r == ResponseType::Accept {
                     *state.borrow_mut() = GeneralState::default();
                     refresh_ui();
                 }
@@ -59,7 +59,7 @@ pub fn build(
         });
     }
 
-    // ---- APPLY ----
+    // ---- Apply ----
     {
         let parent = parent.clone();
         let state = state.clone();
@@ -80,13 +80,12 @@ pub fn build(
             let state = state.clone();
             let refresh_ui = refresh_ui.clone();
 
-            dialog.connect_response(move |d, resp| {
-                if resp == ResponseType::Accept {
-                    if hyprland::apply_general(&state.borrow()).is_ok() {
-                        if let Ok(current) = hyprland::read_general() {
-                            *state.borrow_mut() = current;
-                            refresh_ui();
-                        }
+            dialog.connect_response(move |d, r| {
+                if r == ResponseType::Accept {
+                    let _ = hyprland::apply_general(&state.borrow());
+                    if let Ok(new_state) = hyprland::read_general() {
+                        *state.borrow_mut() = new_state;
+                        refresh_ui();
                     }
                 }
                 d.close();
@@ -98,6 +97,5 @@ pub fn build(
 
     footer.append(&reset_btn);
     footer.append(&apply_btn);
-
     footer
 }
