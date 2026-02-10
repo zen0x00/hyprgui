@@ -2,15 +2,15 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use gtk4::prelude::*;
-use gtk4::{ Box, Orientation, Button, MessageDialog, ButtonsType, ResponseType, Window };
+use gtk4::{ Box, Orientation, Button, MessageDialog, ButtonsType, ResponseType };
 
 use crate::state::GeneralState;
 use crate::backend::hyprland;
 
 pub fn build(
-    parent: Window, // ✅ OWNED window
+    parent: gtk4::Window,
     state: Rc<RefCell<GeneralState>>,
-    on_reset: Rc<dyn Fn()>
+    refresh_ui: Rc<dyn Fn()>
 ) -> Box {
     let footer = Box::new(Orientation::Horizontal, 12);
     footer.set_margin_top(8);
@@ -19,7 +19,6 @@ pub fn build(
     footer.set_margin_end(12);
     footer.set_hexpand(true);
     footer.set_halign(gtk4::Align::End);
-    footer.add_css_class("footer-bar");
 
     let reset_btn = Button::with_label("Reset");
     let apply_btn = Button::with_label("Apply");
@@ -27,11 +26,11 @@ pub fn build(
     reset_btn.add_css_class("destructive-action");
     apply_btn.add_css_class("suggested-action");
 
-    // ---- Reset confirmation ----
+    // ---- RESET ----
     {
-        let state = state.clone();
-        let on_reset = on_reset.clone();
         let parent = parent.clone();
+        let state = state.clone();
+        let refresh_ui = refresh_ui.clone();
 
         reset_btn.connect_clicked(move |_| {
             let dialog = MessageDialog::new(
@@ -45,12 +44,13 @@ pub fn build(
             dialog.add_button("Cancel", ResponseType::Cancel);
             dialog.add_button("Reset", ResponseType::Accept);
 
-            let state_inner = state.clone();
-            let on_reset_inner = on_reset.clone();
+            let state = state.clone();
+            let refresh_ui = refresh_ui.clone();
+
             dialog.connect_response(move |d, resp| {
                 if resp == ResponseType::Accept {
-                    *state_inner.borrow_mut() = GeneralState::default();
-                    on_reset_inner(); // ✅ reset UI
+                    *state.borrow_mut() = GeneralState::default();
+                    refresh_ui();
                 }
                 d.close();
             });
@@ -59,14 +59,15 @@ pub fn build(
         });
     }
 
-    // ---- Apply confirmation ----
+    // ---- APPLY ----
     {
-        let state = state.clone();
         let parent = parent.clone();
+        let state = state.clone();
+        let refresh_ui = refresh_ui.clone();
 
         apply_btn.connect_clicked(move |_| {
             let dialog = MessageDialog::new(
-                Some(&parent), // ✅ parented to app window
+                Some(&parent),
                 gtk4::DialogFlags::MODAL,
                 gtk4::MessageType::Question,
                 ButtonsType::None,
@@ -76,10 +77,17 @@ pub fn build(
             dialog.add_button("Cancel", ResponseType::Cancel);
             dialog.add_button("Apply", ResponseType::Accept);
 
-            let state_inner = state.clone();
+            let state = state.clone();
+            let refresh_ui = refresh_ui.clone();
+
             dialog.connect_response(move |d, resp| {
                 if resp == ResponseType::Accept {
-                    let _ = hyprland::apply_general(&state_inner.borrow());
+                    if hyprland::apply_general(&state.borrow()).is_ok() {
+                        if let Ok(current) = hyprland::read_general() {
+                            *state.borrow_mut() = current;
+                            refresh_ui();
+                        }
+                    }
                 }
                 d.close();
             });
