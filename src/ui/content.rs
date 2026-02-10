@@ -56,11 +56,62 @@ pub fn general_page(state: Rc<RefCell<GeneralState>>) -> (PreferencesPage, Rc<dy
     group.add(&row);
     page.add(&group);
 
+    // ---- gaps_in ----
+    let gaps_in_adjustment = Adjustment::new(5.0, 0.0, 50.0, 1.0, 5.0, 0.0);
+    let gaps_in_spin = SpinButton::new(Some(&gaps_in_adjustment), 1.0, 0);
+    gaps_in_spin.set_numeric(true);
+
+    // init from state
+    gaps_in_spin.set_value(state.borrow().gaps_in as f64);
+
+    // write back to state
+    let state_clone = state.clone();
+    gaps_in_spin.connect_value_changed(move |s| {
+        state_clone.borrow_mut().gaps_in = s.value() as i32;
+    });
+
+    let gaps_in_row = ActionRow::new();
+    gaps_in_row.set_title("Gaps In");
+    gaps_in_row.set_subtitle("Gaps between windows");
+    gaps_in_row.add_suffix(&gaps_in_spin);
+    gaps_in_row.set_activatable(false);
+
+    group.add(&gaps_in_row);
+
+    // ---- gaps_out----
+    let gaps_out_adjustment = Adjustment::new(5.0, 0.0, 50.0, 1.0, 5.0, 0.0);
+    let gaps_out_spin = SpinButton::new(Some(&gaps_out_adjustment), 1.0, 0);
+    gaps_out_spin.set_numeric(true);
+
+    // init from state
+    gaps_out_spin.set_value(state.borrow().gaps_in as f64);
+
+    // write back to state
+    let state_clone = state.clone();
+    gaps_out_spin.connect_value_changed(move |s| {
+        state_clone.borrow_mut().gaps_out = s.value() as i32;
+    });
+
+    let gaps_out_row = ActionRow::new();
+    gaps_out_row.set_title("Gaps Out");
+    gaps_out_row.set_subtitle("Gaps between windows");
+    gaps_out_row.add_suffix(&gaps_out_spin);
+    gaps_out_row.set_activatable(false);
+
+    group.add(&gaps_out_row);
+
     // ✅ reset closure lives where `spin` lives
     let reset_ui: Rc<dyn Fn()> = {
-        let spin = spin.clone();
+        let border_spin = SpinButton::new(Some(&adjustment), 1.0, 0);
+        border_spin.set_numeric(true);
+        let gaps_in_spin = gaps_in_spin.clone();
+        let gaps_out_spin = gaps_out_spin.clone();
+
         Rc::new(move || {
-            spin.set_value(GeneralState::default().border_size as f64);
+            let defaults = GeneralState::default();
+            border_spin.set_value(defaults.border_size as f64);
+            gaps_in_spin.set_value(defaults.gaps_in as f64);
+            gaps_out_spin.set_value(defaults.gaps_out as f64);
         })
     };
 
