@@ -9,9 +9,10 @@ use crate::ui::{ sidebar, content, footer };
 use crate::state::GeneralState;
 
 pub fn build(app: &adw::Application) -> ApplicationWindow {
-    // ✅ state lives INSIDE the function
+    // ---- Shared state ----
     let general_state = Rc::new(RefCell::new(GeneralState::default()));
 
+    // ---- Window ----
     let window = ApplicationWindow::builder()
         .application(app)
         .title("HyprGUI")
@@ -34,10 +35,14 @@ pub fn build(app: &adw::Application) -> ApplicationWindow {
     top_bar.append(&title);
     root.append(&top_bar);
 
+    // ---- Main area ----
     let main = Box::new(Orientation::Horizontal, 0);
-    let sidebar = sidebar::build();
-    let stack = content::build(general_state.clone());
 
+    let sidebar = sidebar::build();
+    let content = content::build(general_state.clone());
+    let stack = content.stack;
+
+    // initial selection
     sidebar.list.select_row(sidebar.list.row_at_index(0).as_ref());
 
     let stack_clone = stack.clone();
@@ -51,17 +56,18 @@ pub fn build(app: &adw::Application) -> ApplicationWindow {
     main.append(&sidebar.root);
     main.append(&stack);
 
-    // ---- Footer ----
-    let footer = footer::build(general_state.clone());
-
     root.append(&main);
+
+    // ---- Footer ----
+    let window_clone = window.clone();
+    let footer = footer::build(
+        window_clone.upcast::<gtk4::Window>(),
+        general_state.clone(),
+        content.reset_ui.clone()
+    );
+
     root.append(&footer);
 
-    main.append(&sidebar.root);
-    main.append(&stack);
-
-    root.append(&main);
     window.set_content(Some(&root));
-
     window
 }

@@ -2,12 +2,16 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use gtk4::prelude::*;
-use gtk4::{ Box, Orientation, Button, MessageDialog, ButtonsType, ResponseType };
+use gtk4::{ Box, Orientation, Button, MessageDialog, ButtonsType, ResponseType, Window };
 
 use crate::state::GeneralState;
 use crate::backend::hyprland;
 
-pub fn build(state: Rc<RefCell<GeneralState>>) -> Box {
+pub fn build(
+    parent: Window, // ✅ OWNED window
+    state: Rc<RefCell<GeneralState>>,
+    on_reset: Rc<dyn Fn()>
+) -> Box {
     let footer = Box::new(Orientation::Horizontal, 12);
     footer.set_margin_top(8);
     footer.set_margin_bottom(8);
@@ -26,9 +30,12 @@ pub fn build(state: Rc<RefCell<GeneralState>>) -> Box {
     // ---- Reset confirmation ----
     {
         let state = state.clone();
+        let on_reset = on_reset.clone();
+        let parent = parent.clone();
+
         reset_btn.connect_clicked(move |_| {
             let dialog = MessageDialog::new(
-                None::<&gtk4::Window>,
+                Some(&parent),
                 gtk4::DialogFlags::MODAL,
                 gtk4::MessageType::Warning,
                 ButtonsType::None,
@@ -38,11 +45,12 @@ pub fn build(state: Rc<RefCell<GeneralState>>) -> Box {
             dialog.add_button("Cancel", ResponseType::Cancel);
             dialog.add_button("Reset", ResponseType::Accept);
 
-            // 🔑 CLONE AGAIN for the inner closure
             let state_inner = state.clone();
+            let on_reset_inner = on_reset.clone();
             dialog.connect_response(move |d, resp| {
                 if resp == ResponseType::Accept {
                     *state_inner.borrow_mut() = GeneralState::default();
+                    on_reset_inner(); // ✅ reset UI
                 }
                 d.close();
             });
@@ -50,12 +58,15 @@ pub fn build(state: Rc<RefCell<GeneralState>>) -> Box {
             dialog.show();
         });
     }
+
     // ---- Apply confirmation ----
     {
         let state = state.clone();
+        let parent = parent.clone();
+
         apply_btn.connect_clicked(move |_| {
             let dialog = MessageDialog::new(
-                None::<&gtk4::Window>,
+                Some(&parent), // ✅ parented to app window
                 gtk4::DialogFlags::MODAL,
                 gtk4::MessageType::Question,
                 ButtonsType::None,
