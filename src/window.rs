@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use adw::prelude::*;
 use adw::ApplicationWindow;
-use gtk4::{ Box, Orientation, Align };
+use gtk4::{ Box, Orientation };
 
 use crate::backend::hyprland;
 use crate::state::GeneralState;

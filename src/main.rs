@@ -8,7 +8,7 @@ mod state;
 mod backend;
 
 fn main() {
-    let app = Application::builder().application_id("hyprgui").build();
+    let app = Application::builder().application_id("io.github.hyprgui").build();
 
     app.connect_activate(|app| {
         app::build(app);

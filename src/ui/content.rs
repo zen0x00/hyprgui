@@ -118,7 +118,7 @@ fn add_entry(
     entry.set_text(&getter(&state.borrow()));
 
     let state_clone = state.clone();
-    entry.connect_changed(move |e| {
+    entry.connect_changed(move |e: &adw::EntryRow| {
         setter(&mut state_clone.borrow_mut(), e.text().to_string());
     });
 
@@ -126,7 +126,8 @@ fn add_entry(
         let entry = entry.clone();
         let state = state.clone();
         Rc::new(move || {
-            entry.set_text(&getter(&state.borrow()));
+            let val = getter(&state.borrow());
+            entry.set_text(&val);
         })
     };
 
