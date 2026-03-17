@@ -1,5 +1,5 @@
 use adw::prelude::*;
-use adw::{ ActionRow, PreferencesGroup, PreferencesPage };
+use adw::{ ActionRow, EntryRow, PreferencesGroup, PreferencesPage };
 use gtk4::{ Adjustment, SpinButton, Stack };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -76,6 +76,24 @@ fn general_page(state: Rc<RefCell<GeneralState>>) -> (PreferencesPage, Rc<dyn Fn
         &mut refreshers
     );
 
+    add_entry(
+        &group,
+        "Active Border Color",
+        state.clone(),
+        |s| s.active_border.clone(),
+        |s, v| s.active_border = v,
+        &mut refreshers
+    );
+
+    add_entry(
+        &group,
+        "Inactive Border Color",
+        state.clone(),
+        |s| s.inactive_border.clone(),
+        |s, v| s.inactive_border = v,
+        &mut refreshers
+    );
+
     page.add(&group);
 
     let refresh_all = Rc::new(move || {
@@ -85,6 +103,35 @@ fn general_page(state: Rc<RefCell<GeneralState>>) -> (PreferencesPage, Rc<dyn Fn
     });
 
     (page, refresh_all)
+}
+
+fn add_entry(
+    group: &PreferencesGroup,
+    title: &str,
+    state: Rc<RefCell<GeneralState>>,
+    getter: fn(&GeneralState) -> String,
+    setter: fn(&mut GeneralState, String),
+    refreshers: &mut Vec<Rc<dyn Fn()>>
+) {
+    let entry = EntryRow::new();
+    entry.set_title(title);
+    entry.set_text(&getter(&state.borrow()));
+
+    let state_clone = state.clone();
+    entry.connect_changed(move |e| {
+        setter(&mut state_clone.borrow_mut(), e.text().to_string());
+    });
+
+    let refresh = {
+        let entry = entry.clone();
+        let state = state.clone();
+        Rc::new(move || {
+            entry.set_text(&getter(&state.borrow()));
+        })
+    };
+
+    refreshers.push(refresh);
+    group.add(&entry);
 }
 
 fn add_spin(

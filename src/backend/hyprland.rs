@@ -8,6 +8,8 @@ pub fn read_general() -> Result<GeneralState, String> {
         border_size: read_int("general:border_size")?,
         gaps_in: read_gap("general:gaps_in", 5)?,
         gaps_out: read_gap("general:gaps_out", 20)?,
+        active_border: read_gradient("general:col.active_border", "0xffffffff")?,
+        inactive_border: read_gradient("general:col.inactive_border", "0xff444444")?,
     })
 }
 
@@ -23,6 +25,20 @@ fn read_int(key: &str) -> Result<i32, String> {
         .as_i64()
         .map(|v| v as i32)
         .ok_or_else(|| format!("Invalid int for {}", key))
+}
+
+fn read_gradient(key: &str, fallback: &str) -> Result<String, String> {
+    let output = Command::new("hyprctl")
+        .args(["getoption", key, "-j"])
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    let json: Value = serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())?;
+
+    Ok(json["str"]
+        .as_str()
+        .unwrap_or(fallback)
+        .to_string())
 }
 
 fn read_gap(key: &str, fallback: i32) -> Result<i32, String> {
@@ -50,6 +66,8 @@ pub fn apply_general(state: &GeneralState) -> Result<(), String> {
         ("general:border_size", state.border_size.to_string()),
         ("general:gaps_in", state.gaps_in.to_string()),
         ("general:gaps_out", state.gaps_out.to_string()),
+        ("general:col.active_border", state.active_border.clone()),
+        ("general:col.inactive_border", state.inactive_border.clone()),
     ];
 
     for (key, value) in cmds {
