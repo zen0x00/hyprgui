@@ -61,6 +61,12 @@ fn read_gap(key: &str, fallback: i32) -> Result<i32, String> {
     Ok(fallback)
 }
 
+pub fn apply_keyword(key: &str, value: &str) {
+    let _ = Command::new("hyprctl")
+        .args(["keyword", key, value])
+        .status();
+}
+
 pub fn apply_general(state: &GeneralState) -> Result<(), String> {
     let cmds = [
         ("general:border_size", state.border_size.to_string()),
