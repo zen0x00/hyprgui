@@ -10,9 +10,8 @@ pub struct Sidebar {
 pub fn build() -> Sidebar {
     let root = Box::new(Orientation::Vertical, 0);
     root.add_css_class("sidebar");
-    root.set_size_request(240, -1);
+    root.set_size_request(220, -1);
 
-    // ---- List ----
     let list = build_list();
 
     let scroller = ScrolledWindow::new();
@@ -27,34 +26,32 @@ pub fn build() -> Sidebar {
 
 fn build_list() -> ListBox {
     let list = ListBox::new();
-    list.add_css_class("sidebar-list");
+    list.add_css_class("navigation-sidebar");
     list.set_selection_mode(gtk4::SelectionMode::Single);
 
-    // -------- Hyprland section --------
-    let hyprland_children = hyprland_children();
+    let children = settings_children();
 
     let list_clone = list.clone();
-    let children_clone = hyprland_children.clone();
+    let children_clone = children.clone();
 
-    let hyprland_header = section_header("Hyprland", move || {
+    let header = section_header("Settings", move || {
         collapse_all(&list_clone);
         set_section_visible(&children_clone, true);
         list_clone.select_row(children_clone.first());
     });
 
-    list.append(&hyprland_header);
-    for row in &hyprland_children {
+    list.append(&header);
+    for row in &children {
         list.append(row);
     }
 
-    // -------- Initial state --------
-    set_section_visible(&hyprland_children, true);
-    list.select_row(hyprland_children.first());
+    set_section_visible(&children, true);
+    list.select_row(children.first());
 
     list
 }
 
-fn hyprland_children() -> Vec<ListBoxRow> {
+fn settings_children() -> Vec<ListBoxRow> {
     vec![child_row("General", "general")]
 }
 
@@ -66,7 +63,7 @@ fn section_header(title: &str, on_click: impl Fn() + 'static) -> ListBoxRow {
     let label = Label::new(Some(title));
     label.set_xalign(0.0);
     label.set_margin_top(16);
-    label.set_margin_bottom(6);
+    label.set_margin_bottom(8);
     label.set_margin_start(12);
     label.set_margin_end(12);
     label.add_css_class("heading");
@@ -85,10 +82,10 @@ fn child_row(label: &str, name: &str) -> ListBoxRow {
     let row = ListBoxRow::new();
 
     let box_ = Box::new(Orientation::Horizontal, 8);
-    box_.set_margin_top(6);
-    box_.set_margin_bottom(6);
-    box_.set_margin_start(28);
-    box_.set_margin_end(12);
+    box_.set_margin_top(4);
+    box_.set_margin_bottom(4);
+    box_.set_margin_start(8);
+    box_.set_margin_end(8);
 
     let text = Label::new(Some(label));
     text.set_xalign(0.0);
@@ -111,7 +108,6 @@ fn collapse_all(list: &ListBox) {
     let mut child = list.first_child();
 
     while let Some(widget) = child {
-        // grab next sibling BEFORE moving widget
         child = widget.next_sibling();
 
         if let Ok(row) = widget.downcast::<ListBoxRow>() {

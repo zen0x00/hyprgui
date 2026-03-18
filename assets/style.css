@@ -2,27 +2,33 @@
   background-color: @sidebar_bg_color;
 }
 
-.sidebar-list {
-  padding-bottom: 12px;
+.navigation-sidebar {
+  padding: 6px;
 }
 
-.content {
+.navigation-sidebar row {
+  border-radius: 8px;
+  margin: 2px 0;
+}
+
+.content-area {
   background-color: @view_bg_color;
 }
 
 .footer-bar {
-    border-top: 1px solid @borders;
-    background-color: @window_bg_color;
+  background-color: transparent;
 }
 
-.top-bar {
-  background-color: @headerbar_bg_color;
-  border-bottom: 1px solid @borders;
+.pill {
+  padding: 4px 20px;
+  border-radius: 999px;
 }
 
-.app-title {
-  font-size: 32px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
+.revert-btn {
+  opacity: 0.6;
+  transition: opacity 200ms ease;
+}
+
+.revert-btn:hover {
   opacity: 1;
 }

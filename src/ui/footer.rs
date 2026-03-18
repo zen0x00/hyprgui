@@ -12,11 +12,12 @@ pub fn build(
     state: Rc<RefCell<GeneralState>>,
     refresh_ui: Rc<dyn Fn()>
 ) -> Box {
-    let footer = Box::new(Orientation::Horizontal, 12);
-    footer.set_margin_top(8);
-    footer.set_margin_bottom(8);
-    footer.set_margin_start(12);
-    footer.set_margin_end(12);
+    let footer = Box::new(Orientation::Horizontal, 8);
+    footer.add_css_class("footer-bar");
+    footer.set_margin_top(10);
+    footer.set_margin_bottom(10);
+    footer.set_margin_start(16);
+    footer.set_margin_end(16);
     footer.set_hexpand(true);
     footer.set_halign(gtk4::Align::End);
 
@@ -24,7 +25,10 @@ pub fn build(
     let apply_btn = Button::with_label("Apply");
 
     reset_btn.add_css_class("destructive-action");
+    reset_btn.add_css_class("pill");
+
     apply_btn.add_css_class("suggested-action");
+    apply_btn.add_css_class("pill");
 
     // ---- Reset ----
     {

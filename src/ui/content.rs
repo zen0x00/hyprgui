@@ -1,6 +1,6 @@
 use adw::prelude::*;
 use adw::{ ActionRow, EntryRow, PreferencesGroup, PreferencesPage };
-use gtk4::{ Adjustment, Button, SpinButton, Stack };
+use gtk4::{ Adjustment, Button, SpinButton, Stack, Switch };
 use std::cell::{ Cell, RefCell };
 use std::rc::Rc;
 
@@ -16,6 +16,7 @@ pub fn build(state: Rc<RefCell<GeneralState>>) -> Content {
     let stack = Stack::new();
     stack.set_hexpand(true);
     stack.set_vexpand(true);
+    stack.add_css_class("content-area");
 
     let (general_page, refresh_general) = general_page(state);
     stack.add_named(&general_page, Some("general"));
@@ -31,7 +32,7 @@ fn general_page(state: Rc<RefCell<GeneralState>>) -> (PreferencesPage, Rc<dyn Fn
     page.set_title("General");
 
     let group = PreferencesGroup::new();
-    group.set_title("General Settings");
+    group.set_title("General");
 
     let mut refreshers: Vec<Rc<dyn Fn()>> = Vec::new();
 
@@ -96,6 +97,147 @@ fn general_page(state: Rc<RefCell<GeneralState>>) -> (PreferencesPage, Rc<dyn Fn
 
     page.add(&group);
 
+    let decoration_group = PreferencesGroup::new();
+    decoration_group.set_title("Decoration");
+
+    add_spin(
+        &decoration_group,
+        "Rounding",
+        "Corner rounding radius in pixels",
+        "decoration:rounding",
+        0,
+        30,
+        state.clone(),
+        |s| s.rounding,
+        |s, v| { s.rounding = v; },
+        &mut refreshers
+    );
+
+    add_spin_float(
+        &decoration_group,
+        "Rounding Power",
+        "Power of the rounding curve",
+        "decoration:rounding_power",
+        0.0,
+        10.0,
+        0.1,
+        1,
+        state.clone(),
+        |s| s.rounding_power,
+        |s, v| { s.rounding_power = v; },
+        &mut refreshers
+    );
+
+    add_spin_float(
+        &decoration_group,
+        "Active Opacity",
+        "Opacity of active windows",
+        "decoration:active_opacity",
+        0.0,
+        1.0,
+        0.05,
+        2,
+        state.clone(),
+        |s| s.active_opacity,
+        |s, v| { s.active_opacity = v; },
+        &mut refreshers
+    );
+
+    add_spin_float(
+        &decoration_group,
+        "Inactive Opacity",
+        "Opacity of inactive windows",
+        "decoration:inactive_opacity",
+        0.0,
+        1.0,
+        0.05,
+        2,
+        state.clone(),
+        |s| s.inactive_opacity,
+        |s, v| { s.inactive_opacity = v; },
+        &mut refreshers
+    );
+
+    add_toggle(
+        &decoration_group,
+        "Dim Modal",
+        "Dim windows behind modal dialogs",
+        "decoration:dim_modal",
+        state.clone(),
+        |s| s.dim_modal,
+        |s, v| { s.dim_modal = v; },
+        &mut refreshers
+    );
+
+    add_toggle(
+        &decoration_group,
+        "Dim Inactive",
+        "Dim inactive windows",
+        "decoration:dim_inactive",
+        state.clone(),
+        |s| s.dim_inactive,
+        |s, v| { s.dim_inactive = v; },
+        &mut refreshers
+    );
+
+    add_spin_float(
+        &decoration_group,
+        "Dim Strength",
+        "How much to dim inactive windows (0.0–1.0)",
+        "decoration:dim_strength",
+        0.0,
+        1.0,
+        0.05,
+        2,
+        state.clone(),
+        |s| s.dim_strength,
+        |s, v| { s.dim_strength = v; },
+        &mut refreshers
+    );
+
+    add_spin_float(
+        &decoration_group,
+        "Dim Special",
+        "Dimming amount for special workspace",
+        "decoration:dim_special",
+        0.0,
+        1.0,
+        0.05,
+        2,
+        state.clone(),
+        |s| s.dim_special,
+        |s, v| { s.dim_special = v; },
+        &mut refreshers
+    );
+
+    add_spin_float(
+        &decoration_group,
+        "Dim Around",
+        "Dimming amount around floating windows",
+        "decoration:dim_around",
+        0.0,
+        1.0,
+        0.05,
+        2,
+        state.clone(),
+        |s| s.dim_around,
+        |s, v| { s.dim_around = v; },
+        &mut refreshers
+    );
+
+    add_toggle(
+        &decoration_group,
+        "Border Part of Window",
+        "Include border in window geometry",
+        "decoration:border_part_of_window",
+        state.clone(),
+        |s| s.border_part_of_window,
+        |s, v| { s.border_part_of_window = v; },
+        &mut refreshers
+    );
+
+    page.add(&decoration_group);
+
     let refresh_all = Rc::new(move || {
         for r in &refreshers {
             r();
@@ -123,6 +265,7 @@ fn add_entry(
     let revert_btn = Button::from_icon_name("edit-undo-symbolic");
     revert_btn.set_valign(gtk4::Align::Center);
     revert_btn.add_css_class("flat");
+    revert_btn.add_css_class("revert-btn");
     revert_btn.set_visible(false);
     entry.add_suffix(&revert_btn);
 
@@ -196,6 +339,7 @@ fn add_spin(
     let revert_btn = Button::from_icon_name("edit-undo-symbolic");
     revert_btn.set_valign(gtk4::Align::Center);
     revert_btn.add_css_class("flat");
+    revert_btn.add_css_class("revert-btn");
     revert_btn.set_visible(false);
 
     let row = ActionRow::new();
@@ -239,6 +383,157 @@ fn add_spin(
             original.set(val);
             revert_btn.set_visible(false);
             spin.set_value(val as f64);
+        })
+    };
+
+    refreshers.push(refresh);
+    group.add(&row);
+}
+
+fn add_spin_float(
+    group: &PreferencesGroup,
+    title: &str,
+    subtitle: &str,
+    hyprctl_key: &str,
+    min: f64,
+    max: f64,
+    step: f64,
+    digits: u32,
+    state: Rc<RefCell<GeneralState>>,
+    getter: fn(&GeneralState) -> f64,
+    setter: fn(&mut GeneralState, f64),
+    refreshers: &mut Vec<Rc<dyn Fn()>>
+) {
+    let adjustment = Adjustment::new(
+        getter(&state.borrow()),
+        min,
+        max,
+        step,
+        step * 10.0,
+        0.0
+    );
+
+    let spin = SpinButton::new(Some(&adjustment), step, digits);
+
+    let original = Rc::new(Cell::new(getter(&state.borrow())));
+
+    let revert_btn = Button::from_icon_name("edit-undo-symbolic");
+    revert_btn.set_valign(gtk4::Align::Center);
+    revert_btn.add_css_class("flat");
+    revert_btn.add_css_class("revert-btn");
+    revert_btn.set_visible(false);
+
+    let row = ActionRow::new();
+    row.set_title(title);
+    row.set_subtitle(subtitle);
+    row.add_suffix(&revert_btn);
+    row.add_suffix(&spin);
+    row.set_activatable(false);
+
+    // On value change: update state, apply live, toggle revert
+    {
+        let state_clone = state.clone();
+        let original = original.clone();
+        let revert_btn = revert_btn.clone();
+        let key = hyprctl_key.to_string();
+        spin.connect_value_changed(move |s: &SpinButton| {
+            let v = s.value();
+            setter(&mut state_clone.borrow_mut(), v);
+            hyprland::apply_keyword(&key, &v.to_string());
+            revert_btn.set_visible((v - original.get()).abs() > f64::EPSILON);
+        });
+    }
+
+    // On revert click: restore original value
+    {
+        let spin = spin.clone();
+        let original = original.clone();
+        revert_btn.connect_clicked(move |_| {
+            spin.set_value(original.get());
+        });
+    }
+
+    // Refresh: update widget and original value, hide revert
+    let refresh = {
+        let spin = spin.clone();
+        let state = state.clone();
+        let revert_btn = revert_btn.clone();
+        let original = original.clone();
+        Rc::new(move || {
+            let val = getter(&state.borrow());
+            original.set(val);
+            revert_btn.set_visible(false);
+            spin.set_value(val);
+        })
+    };
+
+    refreshers.push(refresh);
+    group.add(&row);
+}
+
+fn add_toggle(
+    group: &PreferencesGroup,
+    title: &str,
+    subtitle: &str,
+    hyprctl_key: &str,
+    state: Rc<RefCell<GeneralState>>,
+    getter: fn(&GeneralState) -> bool,
+    setter: fn(&mut GeneralState, bool),
+    refreshers: &mut Vec<Rc<dyn Fn()>>
+) {
+    let switch = Switch::new();
+    switch.set_active(getter(&state.borrow()));
+    switch.set_valign(gtk4::Align::Center);
+
+    let original = Rc::new(Cell::new(getter(&state.borrow())));
+
+    let revert_btn = Button::from_icon_name("edit-undo-symbolic");
+    revert_btn.set_valign(gtk4::Align::Center);
+    revert_btn.add_css_class("flat");
+    revert_btn.add_css_class("revert-btn");
+    revert_btn.set_visible(false);
+
+    let row = ActionRow::new();
+    row.set_title(title);
+    row.set_subtitle(subtitle);
+    row.add_suffix(&revert_btn);
+    row.add_suffix(&switch);
+    row.set_activatable_widget(Some(&switch));
+
+    // On toggle: update state, apply live, toggle revert
+    {
+        let state_clone = state.clone();
+        let original = original.clone();
+        let revert_btn = revert_btn.clone();
+        let key = hyprctl_key.to_string();
+        switch.connect_active_notify(move |s| {
+            let v = s.is_active();
+            setter(&mut state_clone.borrow_mut(), v);
+            hyprland::apply_keyword(&key, if v { "1" } else { "0" });
+            revert_btn.set_visible(v != original.get());
+        });
+    }
+
+    // On revert click: restore original value
+    {
+        let switch = switch.clone();
+        let original = original.clone();
+        revert_btn.connect_clicked(move |_| {
+            switch.set_active(original.get());
+        });
+    }
+
+    // Refresh: update widget and original value, hide revert
+    let refresh = {
+        let switch = switch.clone();
+        let state = state.clone();
+        let revert_btn = revert_btn.clone();
+        let original = original.clone();
+        Rc::new(move || {
+            let val = getter(&state.borrow());
+            original.set(val);
+            revert_btn.set_visible(false);
+            switch.set_active(val);
         })
     };
 

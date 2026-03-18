@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use adw::prelude::*;
-use adw::ApplicationWindow;
-use gtk4::{ Box, Orientation };
+use adw::{ ApplicationWindow, HeaderBar };
+use gtk4::{ Box, Orientation, Separator };
 
 use crate::backend::hyprland;
 use crate::state::GeneralState;
@@ -21,14 +21,19 @@ pub fn build(app: &adw::Application) -> ApplicationWindow {
         .default_height(600)
         .build();
 
-    let root = Box::new(Orientation::Vertical, 0);
+    // Header bar
+    let header = HeaderBar::new();
+    header.set_title_widget(Some(&gtk4::Label::builder()
+        .label("HyprGUI")
+        .css_classes(["title"])
+        .build()
+    ));
 
-    let main = Box::new(Orientation::Horizontal, 0);
-
+    // Sidebar + separator + content
     let sidebar = sidebar::build();
     let content = content::build(state.clone());
 
-    (content.refresh_ui)(); // 🔑 initial sync
+    (content.refresh_ui)();
 
     sidebar.list.select_row(sidebar.list.row_at_index(0).as_ref());
 
@@ -39,12 +44,20 @@ pub fn build(app: &adw::Application) -> ApplicationWindow {
         }
     });
 
-    main.append(&sidebar.root);
-    main.append(&content.stack);
+    let main_box = Box::new(Orientation::Horizontal, 0);
+    main_box.append(&sidebar.root);
+    main_box.append(&Separator::new(Orientation::Vertical));
+    main_box.append(&content.stack);
+    main_box.set_vexpand(true);
 
+    // Footer
     let footer = footer::build(window.clone().upcast::<gtk4::Window>(), state, content.refresh_ui);
 
-    root.append(&main);
+    // Root layout: header → content → footer
+    let root = Box::new(Orientation::Vertical, 0);
+    root.append(&header);
+    root.append(&main_box);
+    root.append(&Separator::new(Orientation::Horizontal));
     root.append(&footer);
 
     window.set_content(Some(&root));
